@@ -116,14 +116,6 @@ export const PRESET_CONFIG: Record<Presets, PresetConfig> = {
       },
     },
   },
-  [Presets.AUTH]: {
-    title: '',
-    queries: {},
-  },
-  [Presets.STORAGE]: {
-    title: '',
-    queries: {},
-  },
 }
 
 export const DATETIME_FORMAT = 'MMM D, ha'
