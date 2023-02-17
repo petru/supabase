@@ -38,11 +38,7 @@ export const ApiReport: NextPageWithLayout = () => {
 
   return (
     <div className="flex flex-col gap-4 px-5 py-6 mx-auto 1xl:px-28 lg:px-16 xl:px-24 2xl:px-32">
-      <ReportHeader
-        title="API Performance"
-        isLoading={report.isLoading}
-        onRefresh={report.refresh}
-      />
+      <ReportHeader title="API" isLoading={report.isLoading} onRefresh={report.refresh} />
 
       <ReportFilterBar
         onRemoveFilters={report.removeFilters}
