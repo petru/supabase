@@ -1,21 +1,13 @@
 import { useState } from 'react'
-import {
-  BarChart as RechartBarChart,
-  Area,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-  Bar,
-  Cell,
-} from 'recharts'
+import { BarChart as RechartBarChart, XAxis, Tooltip, Bar, Cell, BarProps } from 'recharts'
 import dayjs from 'dayjs'
 import { CHART_COLORS, DateTimeFormats } from 'components/ui/Charts/Charts.constants'
 import ChartHeader from './ChartHeader'
 import { Datum, CommonChartProps } from './Charts.types'
 import utc from 'dayjs/plugin/utc'
 import ChartNoData from './NoDataPlaceholder'
-import { numberFormatter } from './Charts.utils'
+import { numberFormatter, useChartSize } from './Charts.utils'
+import { CategoricalChartProps } from 'recharts/types/chart/generateCategoricalChart'
 dayjs.extend(utc)
 
 export interface BarChartProps<D = Datum> extends CommonChartProps<D> {
@@ -24,7 +16,7 @@ export interface BarChartProps<D = Datum> extends CommonChartProps<D> {
   format?: string
   customDateFormat?: string
   displayDateInUtc?: boolean
-  onDatumClick?: (datum: Datum) => void
+  onBarClick?: (datum: Datum, tooltipData?: Parameters<CategoricalChartProps['onClick']>[0]) => void
 }
 
 const BarChart: React.FC<BarChartProps> = ({
@@ -40,16 +32,10 @@ const BarChart: React.FC<BarChartProps> = ({
   minimalHeader,
   className = '',
   size = 'normal',
-  onDatumClick,
+  onBarClick,
 }) => {
+  const { Container } = useChartSize(size)
   const [focusDataIndex, setFocusDataIndex] = useState<number | null>(null)
-
-  // For future reference: https://github.com/supabase/supabase/pull/5311#discussion_r800852828
-  const chartHeight = {
-    tiny: 76,
-    small: 96,
-    normal: 160,
-  }[size as string] as number
 
   if (data.length === 0) return <ChartNoData className={className} />
 
@@ -78,7 +64,7 @@ const BarChart: React.FC<BarChartProps> = ({
         highlightedLabel={resolvedHighlightedLabel}
         minimalHeader={minimalHeader}
       />
-      <ResponsiveContainer width="100%" height={chartHeight}>
+      <Container>
         <RechartBarChart
           data={data}
           margin={{
@@ -95,13 +81,12 @@ const BarChart: React.FC<BarChartProps> = ({
             }
           }}
           onMouseLeave={() => setFocusDataIndex(null)}
+          onClick={(tooltipData: any) => {
+            // receives tooltip data https://github.com/recharts/recharts/blob/2a3405ff64a0c050d2cf94c36f0beef738d9e9c2/src/chart/generateCategoricalChart.tsx
+            const datum = tooltipData?.activePayload?.[0]?.payload
+            if (onBarClick) onBarClick(datum, tooltipData)
+          }}
         >
-          <defs>
-            <linearGradient id="colorUv" x1="0" y1="0" x2="0" y2="1">
-              <stop offset="5%" stopColor={CHART_COLORS.GREEN_1} stopOpacity={0.8} />
-              <stop offset="95%" stopColor={CHART_COLORS.GREEN_1} stopOpacity={0} />
-            </linearGradient>
-          </defs>
           <XAxis
             dataKey={xAxisKey}
             interval={data.length - 2}
@@ -123,22 +108,18 @@ const BarChart: React.FC<BarChartProps> = ({
             {data?.map((_entry: Datum, index: any) => (
               <Cell
                 key={`cell-${index}`}
-                className={`transition-all duration-300 ${onDatumClick ? 'cursor-pointer' : ''}`}
-                fill={focusDataIndex !== index ? CHART_COLORS.GREEN_1 : CHART_COLORS.GREEN_2}
+                className={`transition-all duration-300 ${onBarClick ? 'cursor-pointer' : ''}`}
+                fill={
+                  focusDataIndex === index || focusDataIndex === null
+                    ? CHART_COLORS.GREEN_1
+                    : CHART_COLORS.GREEN_2
+                }
                 enableBackground={12}
               />
             ))}
           </Bar>
-
-          <Area
-            type="monotone"
-            dataKey={yAxisKey}
-            stroke={CHART_COLORS.GREEN_1}
-            fillOpacity={1}
-            fill="url(#colorUv)"
-          />
         </RechartBarChart>
-      </ResponsiveContainer>
+      </Container>
       {data && (
         <div className="text-scale-900 -mt-5 flex items-center justify-between text-xs">
           <span>{dayjs(data[0][xAxisKey]).format(customDateFormat)}</span>
